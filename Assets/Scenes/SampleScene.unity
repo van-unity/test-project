@@ -156,12 +156,12 @@ MonoBehaviour:
   _tileConfiguration: {fileID: 5281337365672825157}
   _minSwipeDelta: 10000
   _tileAnimationParameters:
-    _resolveDelay: 3
+    _resolveDelay: 0
     _swapDuration: 0.25
     _swapEase: 6
-    _fallDuration: 0.3
+    _fallDuration: 0.1
     _fallEase: 7
-    _collectedTileWobbleScale: {x: 0.1, y: 0.1, z: 0}
+    _collectedTileWobbleScale: {x: -0.2, y: -0.2, z: 0}
     _collectedTilesWobbleDuration: 0.3
     _collectedTilesWobbleEase: 7
     _collectedTilesWobbleVibrato: 5
@@ -303,8 +303,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _boardView: {fileID: 285638885}
   _tileConfiguration: {fileID: 5281337365672825157}
-  _width: 4
-  _height: 5
+  _width: 5
+  _height: 8
 --- !u!4 &1245717961
 Transform:
   m_ObjectHideFlags: 0

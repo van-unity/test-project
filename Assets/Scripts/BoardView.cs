@@ -55,15 +55,16 @@ public class BoardView : MonoBehaviour {
 
             if (resolveResult != null) {
                 if (resolveResult.TileChangeByID.TryGetValue(tileData.Tile.ID, out var changeInfo)) {
-                    if (changeInfo.WasCreated) {
-                        continue;
-                    }
-
+                    // var delay = 0;
+                    // if (changeInfo.WasCreated) {
+                    //     delay = 1;
+                    // }
+                    var distance = Mathf.Abs(changeInfo.ToPos.y - changeInfo.FromPos.y);
+                    var duration = _tileAnimationParameters._fallDuration * distance;
                     tileView.Transform.localPosition = new Vector3(changeInfo.FromPos.x, changeInfo.FromPos.y);
                     tileView.Transform
                         .DOLocalMove(new Vector3(changeInfo.ToPos.x, changeInfo.ToPos.y),
-                            _tileAnimationParameters._fallDuration).SetEase(_tileAnimationParameters._fallEase);
-
+                            duration).SetEase(_tileAnimationParameters._fallEase);
                     continue;
                 }
             }

@@ -5,19 +5,20 @@ using UnityEngine;
 
 public class BoardModel {
     private readonly Tile[,] _state;
-
+    private readonly ITileGenerator _tileGenerator;
     public int Width { get; }
     public int Height { get; }
 
-    public BoardModel(int[,] definition) {
-        Width = definition.GetLength(0);
-        Height = definition.GetLength(1);
+    public BoardModel(int width, int height, ITileGenerator tileGenerator) {
+        _tileGenerator = tileGenerator;
+        Width = width;
+        Height = height;
 
         _state = new Tile[Width, Height];
 
-        for (int i = 0; i < definition.GetLength(0); i++) {
-            for (int j = 0; j < definition.GetLength(1); j++) {
-                _state[i, j] = Tile.Create(definition[i, j]);
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                _state[x, y] = _tileGenerator.CreateTile(_state, x, y);
             }
         }
     }
@@ -96,32 +97,33 @@ public class BoardModel {
 
         var result = new ResolveResult(matches);
         bool moreToResolve;
+        int resolveStep = 0;
+        
         do {
             moreToResolve = TryMoveTilesDown(result);
+            moreToResolve |= CreateTilesAtTop(result, resolveStep++);
         } while (moreToResolve);
 
 
         //add new tiles
-        PrintBoard();
+        // PrintBoard();
         return result;
     }
 
-    private void PrintBoard() {
-        var str = "";
-        for (int j = Height - 1; j >= 0; j--) {
-            for (int i = 0; i < Width; i++) {
-                if (GetAt(i, j) == null) {
-                    str += " N ";
-                } else {
-                    str += $" {GetAt(i, j).TileType} ";
-                }
-            }
-
-            str += "\n";
-        }
-
-        Debug.LogError(str);
-    }
+    // private void PrintBoard() {
+    //     var str = "";
+    //     for (int j = Height - 1; j >= 0; j--) {
+    //         for (int i = 0; i < Width; i++) {
+    //             if (GetAt(i, j) == null) {
+    //                 str += " N ";
+    //             } else {
+    //                 str += $" {GetAt(i, j).TileType} ";
+    //             }
+    //         }
+    //
+    //         str += "\n";
+    //     }
+    // }
 
     private bool TryMoveTilesDown(ResolveResult result) {
         var movedAny = false;
@@ -167,5 +169,28 @@ public class BoardModel {
             matches.Add(current);
             current = new BoardPos(current.x + dx, current.y + dy);
         }
+    }
+
+    private bool CreateTilesAtTop(ResolveResult resolveResult, int resolveStep) {
+        var createdAnyPieces = false;
+        var y = Height - 1;
+        for (int x = 0; x < Width; x++) {
+            if (GetAt(x, y) == null) {
+                var pos = new BoardPos(x, y);
+                var tile = _tileGenerator.CreateTile(_state, x, y);
+                _state[x, y] = tile;
+                createdAnyPieces = true;
+
+                resolveResult.TileChangeByID.Add(tile.ID,
+                    new TileChangeInfo {
+                        CreationTime = resolveStep,
+                        WasCreated = true,
+                        ToPos = pos,
+                        FromPos = new BoardPos(x, Height + 1)
+                    });
+            }
+        }
+
+        return createdAnyPieces;
     }
 }
