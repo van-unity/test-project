@@ -1,15 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 [RequireComponent(typeof(SpriteRenderer))]
-public class TileView : MonoBehaviour {
+public class TileView : MonoBehaviour, ISpawnable {
     [SerializeField] private TextMeshPro _text;
     private SpriteRenderer _spriteRenderer;
 
+    public GameObject GameObject { get; private set; }
     public Transform Transform { get; private set; }
     public float Alpha => _spriteRenderer.color.a;
 
@@ -30,7 +27,23 @@ public class TileView : MonoBehaviour {
     public void SetSortingOrder(int sortingOrder) => _spriteRenderer.sortingOrder = sortingOrder;
 
     private void Awake() {
+        
+    }
+
+    public void Initialize() {
+        GameObject = gameObject;
         Transform = transform;
         _spriteRenderer = GetComponent<SpriteRenderer>();
+        GameObject.SetActive(false);
+    }
+
+    public void OnSpawned() {
+        GameObject.SetActive(true);
+    }
+
+    public void OnDeSpawned() {
+        SetAlpha(1);
+        Transform.localScale = Vector3.one;
+        GameObject.SetActive(false);
     }
 }

@@ -30,7 +30,7 @@ public class TileCreatorStrategyBase : ITileCreatorStrategy {
             return true;
         }
 
-        var rightPos = new BoardPos(currentPos.x - 1, currentPos.y);
+        var rightPos = new BoardPos(currentPos.x + 1, currentPos.y);
         var rightMatches = boardModel.FindMatchesDirection(rightPos, matchValue, Vector2Int.right);
         if (rightMatches.Count >= 2) {
             return true;

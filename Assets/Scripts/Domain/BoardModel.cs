@@ -57,23 +57,30 @@ namespace Domain {
 
         public bool IsWithinBounds(int x, int y) => x < Width && y < Height && x >= 0 && y >= 0;
 
-        public ResolveResult Resolve(BoardPos from, BoardPos to) {
+        public void Swap(BoardPos from, BoardPos to) {
             _state.Swap(from, to);
+        }
 
+        public ResolveResult Resolve() {
+            var result = new ResolveResult();
             var matches = _matchFinderStrategy.FindMatches(this);
-            var result = new ResolveResult(matches);
+            if (matches == null || matches.Count == 0) {
+                return result;
+            }
+
+            result.CollectedTiles.AddRange(matches);
             bool moreToResolve;
-            var resolveStep = 0;
 
             do {
-                moreToResolve = TryMoveTilesDown(result);
-                moreToResolve |= CreateTilesAtTop(result, resolveStep++);
+                moreToResolve = TryMoveTilesOneDown(result);
             } while (moreToResolve);
+
+            CreateNewTiles(result);
 
             return result;
         }
 
-        private bool TryMoveTilesDown(ResolveResult result) {
+        private bool TryMoveTilesOneDown(ResolveResult result) {
             var movedAny = false;
             for (int y = Height - 1; y >= 1; y--) {
                 for (int x = 0; x < Width; x++) {
@@ -97,7 +104,7 @@ namespace Domain {
                         changeInfo.ToPos = toPos;
                     } else {
                         result.TileChangeByID.Add(tileToMove.ID,
-                            new TileChangeInfo()
+                            new TileChangeInfo
                                 { CreationTime = 0, FromPos = fromPos, ToPos = toPos, WasCreated = false });
                     }
                 }
@@ -106,43 +113,25 @@ namespace Domain {
             return movedAny;
         }
 
-        private bool CreateTilesAtTop(ResolveResult resolveResult, int resolveStep) {
-            int rowIndex = -1;
-
+        private void CreateNewTiles(ResolveResult resolveResult) {
             for (int x = 0; x < Width; x++) {
                 for (int y = 0; y < Height; y++) {
                     if (GetAt(x, y) != null) {
                         continue;
                     }
 
-                    rowIndex = y;
-                    break;
-                }
-            }
-        
-            if (rowIndex == -1) {
-                return false;
-            }
-        
-            var createdAnyPieces = false;
-            for (int x = 0; x < Width; x++) {
-                if (GetAt(x, rowIndex) == null) {
-                    var pos = new BoardPos(x, rowIndex);
-                    var tile = _tileCreatorStrategy.CreateTile(this, x, rowIndex);
-                    SetAt(x, rowIndex, tile);
-                    createdAnyPieces = true;
-
-                    resolveResult.TileChangeByID.Add(tile.ID,
+                    var pos = new BoardPos(x, y);
+                    var tile = _tileCreatorStrategy.CreateTile(this, x, y);
+                    SetAt(x, y, tile);
+                    resolveResult.TileChangeByID[tile.ID] =
                         new TileChangeInfo {
-                            CreationTime = resolveStep,
+                            CreationTime = y,
                             WasCreated = true,
                             ToPos = pos,
                             FromPos = new BoardPos(x, Height + 1)
-                        });
+                        };
                 }
             }
-
-            return createdAnyPieces;
         }
     }
 }

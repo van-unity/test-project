@@ -16,7 +16,7 @@ public class BoardView : MonoBehaviour {
         public Ease _collectedTilesWobbleEase = Ease.InOutBack;
     }
 
-    [SerializeField] private TileView _tileViewPrefab;
+    [SerializeField] private TileViewPool _tileViewPool;
     [SerializeField] private TileConfiguration _tileConfiguration;
     [SerializeField] private float _minSwipeDelta;
     [SerializeField] private TileAnimationParameters _tileAnimationParameters;
@@ -40,12 +40,17 @@ public class BoardView : MonoBehaviour {
     }
 
     private void UpdateGrid(ResolveResult resolveResult = null) {
+        var createdTilesSequence = DOTween.Sequence();
+        var existingTilesSequence = DOTween.Sequence();
+        var wholeSequence = DOTween.Sequence();
+        
         foreach (var tileData in _boardModel.IterateTiles()) {
             if (tileData == null) {
                 continue;
             }
 
-            var tileView = Instantiate(_tileViewPrefab, transform);
+            var tileView = _tileViewPool.Get();
+            tileView.Transform.SetParent(transform);
             if (_tileConfiguration.TryGetTileColorByType(tileData.Tile.TileType, out var tileColor)) {
                 tileView.SetColor(tileColor);
                 tileView.SetText($"[{tileData.Pos.x}, {tileData.Pos.y}]\n{tileData.Tile.TileType}");
@@ -54,24 +59,35 @@ public class BoardView : MonoBehaviour {
 
             if (resolveResult != null) {
                 if (resolveResult.TileChangeByID.TryGetValue(tileData.Tile.ID, out var changeInfo)) {
-                    tileView.SetSortingOrder(changeInfo.WasCreated ? _boardModel.Height - changeInfo.CreationTime : 1);
-                    var distance = Mathf.Abs(changeInfo.ToPos.y - changeInfo.FromPos.y);
-                    var duration = _tileAnimationParameters._fallDuration * distance;
+                    tileView.SetSortingOrder(changeInfo.WasCreated
+                        ? _boardModel.Height - changeInfo.CreationTime
+                        : 100);
                     tileView.Transform.localPosition = new Vector3(changeInfo.FromPos.x, changeInfo.FromPos.y);
-                    tileView.Transform
+                    var moveTween = tileView.Transform
                         .DOLocalMove(new Vector3(changeInfo.ToPos.x, changeInfo.ToPos.y),
-                            duration).SetEase(_tileAnimationParameters._fallEase);
+                            _tileAnimationParameters._fallDuration).SetEase(_tileAnimationParameters._fallEase);
+
+                    if (changeInfo.WasCreated) {
+                        createdTilesSequence.Join(moveTween);
+                    } else {
+                        existingTilesSequence.Join(moveTween);
+                    }
+
                     continue;
                 }
             }
 
             tileView.Transform.localPosition = new Vector3(tileData.Pos.x, tileData.Pos.y, 0);
         }
+
+        wholeSequence.Join(createdTilesSequence);
+        wholeSequence.Join(existingTilesSequence);
+        wholeSequence.AppendCallback(ResolveBoard);
     }
 
     private void ClearGrid() {
         foreach (var tileView in GetComponentsInChildren<TileView>()) {
-            Destroy(tileView.gameObject);
+            _tileViewPool.Return(tileView);
         }
 
         _tileViewByPos.Clear();
@@ -129,6 +145,8 @@ public class BoardView : MonoBehaviour {
             return;
         }
 
+        _boardModel.Swap(_swipePos, toPos);
+
         (_tileViewByPos[_swipePos], _tileViewByPos[toPos]) = (_tileViewByPos[toPos], _tileViewByPos[_swipePos]);
 
         _swapSequence = DOTween.Sequence();
@@ -141,23 +159,24 @@ public class BoardView : MonoBehaviour {
             .DOLocalMove(new Vector3(toPos.x, toPos.y), _tileAnimationParameters._swapDuration)
             .SetEase(_tileAnimationParameters._swapEase));
 
-        _swapSequence.AppendCallback(() => {
-            var resolveResult = _boardModel.Resolve(_swipePos, toPos);
+        _swapSequence.AppendCallback(ResolveBoard);
+    }
 
-            if (resolveResult != null) {
-                var wobbleSequence = DOTween.Sequence();
+    private void ResolveBoard() {
+        var resolveResult = _boardModel.Resolve();
 
-                resolveResult.CollectedTiles.ForEach(tile => {
-                    var tileWobbleSequence = WobbleCollectedTile(_tileViewByPos[tile]);
-                    wobbleSequence.Join(tileWobbleSequence);
-                });
+        if (resolveResult is { CollectedTiles: { Count: > 0 } }) {
+            var wobbleSequence = DOTween.Sequence();
+            resolveResult.CollectedTiles.ForEach(tile => {
+                var tileWobbleSequence = WobbleCollectedTile(_tileViewByPos[tile]);
+                wobbleSequence.Join(tileWobbleSequence);
+            });
 
-                wobbleSequence.AppendCallback(() => {
-                    ClearGrid();
-                    UpdateGrid(resolveResult);
-                });
-            }
-        });
+            wobbleSequence.AppendCallback(() => {
+                ClearGrid();
+                UpdateGrid(resolveResult);
+            });
+        }
     }
 
     private Sequence WobbleCollectedTile(TileView tileView) {
@@ -166,7 +185,7 @@ public class BoardView : MonoBehaviour {
             .DOScale(_tileAnimationParameters._collectedTileWobbleScale,
                 _tileAnimationParameters._collectedTilesWobbleDuration)
             .SetEase(_tileAnimationParameters._collectedTilesWobbleEase));
-        sequence.Join(DOTween.To(() => tileView.Alpha, value => tileView.SetAlpha(value), 0,
+        sequence.Join(DOTween.To(() => tileView.Alpha, tileView.SetAlpha, 0,
             _tileAnimationParameters._collectedTilesWobbleDuration));
 
         return sequence;

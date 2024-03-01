@@ -5,8 +5,8 @@ namespace Domain {
         public List<BoardPos> CollectedTiles { get; }
         public Dictionary<string, TileChangeInfo> TileChangeByID { get; }
 
-        public ResolveResult(List<BoardPos> collectedTiles) {
-            CollectedTiles = collectedTiles;
+        public ResolveResult() {
+            CollectedTiles = new List<BoardPos>();
             TileChangeByID = new Dictionary<string, TileChangeInfo>();
         }
     }
