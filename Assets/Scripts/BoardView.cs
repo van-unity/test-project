@@ -53,15 +53,11 @@ public class BoardView : MonoBehaviour {
             tileView.Transform.SetParent(transform);
             if (_tileConfiguration.TryGetTileColorByType(tileData.Tile.TileType, out var tileColor)) {
                 tileView.SetColor(tileColor);
-                tileView.SetText($"[{tileData.Pos.x}, {tileData.Pos.y}]\n{tileData.Tile.TileType}");
                 _tileViewByPos[tileData.Pos] = tileView;
             }
 
             if (resolveResult != null) {
                 if (resolveResult.TileChangeByID.TryGetValue(tileData.Tile.ID, out var changeInfo)) {
-                    tileView.SetSortingOrder(changeInfo.WasCreated
-                        ? _boardModel.Height - changeInfo.CreationTime
-                        : 100);
                     tileView.Transform.localPosition = new Vector3(changeInfo.FromPos.x, changeInfo.FromPos.y);
                     var moveTween = tileView.Transform
                         .DOLocalMove(new Vector3(changeInfo.ToPos.x, changeInfo.ToPos.y),

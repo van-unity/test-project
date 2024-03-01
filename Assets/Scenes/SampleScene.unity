@@ -302,7 +302,7 @@ MonoBehaviour:
   _boardView: {fileID: 285638885}
   _tileConfiguration: {fileID: 5281337365672825157}
   _width: 4
-  _height: 10
+  _height: 5
 --- !u!4 &1245717961
 Transform:
   m_ObjectHideFlags: 0

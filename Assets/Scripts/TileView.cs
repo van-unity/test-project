@@ -1,9 +1,7 @@
-using TMPro;
 using UnityEngine;
 
 [RequireComponent(typeof(SpriteRenderer))]
 public class TileView : MonoBehaviour, ISpawnable {
-    [SerializeField] private TextMeshPro _text;
     private SpriteRenderer _spriteRenderer;
 
     public GameObject GameObject { get; private set; }
@@ -13,11 +11,7 @@ public class TileView : MonoBehaviour, ISpawnable {
     public void SetColor(Color color) {
         _spriteRenderer.color = color;
     }
-
-    public void SetText(string text) {
-        _text.text = text;
-    }
-
+    
     public void SetAlpha(float alpha) {
         var color = _spriteRenderer.color;
         color.a = alpha;
@@ -25,10 +19,6 @@ public class TileView : MonoBehaviour, ISpawnable {
     }
 
     public void SetSortingOrder(int sortingOrder) => _spriteRenderer.sortingOrder = sortingOrder;
-
-    private void Awake() {
-        
-    }
 
     public void Initialize() {
         GameObject = gameObject;
