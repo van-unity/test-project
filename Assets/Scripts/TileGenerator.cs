@@ -2,10 +2,6 @@ using Domain;
 using Extensions;
 using UnityEngine;
 
-public interface ITileCreatorStrategy {
-    Tile CreateTile(BoardModel boardModel, int x, int y);
-}
-
 public class TileCreatorStrategyBase : ITileCreatorStrategy {
     private readonly int[] _tileTypes;
 
